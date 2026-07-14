@@ -18,7 +18,7 @@ To run this distributed system locally, we use Docker Compose to mock AWS servic
 * **psql** (or a visual database client like PgAdmin for manual inspection)
 
 ### 2. Environment Variables
-Before starting, you must create a `.env` file inside **each** microservice directory (`backend/app/services/<service-name>`). Ensure they are configured to point to your local PostgreSQL containers and the LocalStack endpoint (`http://localhost:4566`). Reference the `env.ts` file in each service for the specific required variables.
+Before starting, you must create a `.env` file inside **each** microservice directory (`backend/app/services/<service-name>`). Ensure they are configured to point to your local PostgreSQL containers and the LocalStack endpoint (`http://localhost:4566`). In each microsservice root folder there is a .env.example file. Reference the `env.ts` file in each service for the specific required variables.
 
 ### 3. Spin Up Local Infrastructure
 Start the local PostgreSQL instance and LocalStack (mocking S3, SES, SNS, and EventBridge):
@@ -71,6 +71,10 @@ npm install
 npm run dev
 
 ```
+
+Remember creating .env file and placing VITE_API_BASE_URL=http://localhost:5173/v1
+
+For authentication, the password is 'password123'. Seeded admin user is admin@taskmanager.local
 
 The application will now be fully functional and available at `http://localhost:5173`.
 
