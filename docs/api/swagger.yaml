@@ -1,0 +1,1696 @@
+openapi: 3.1.0
+info:
+  title: Distributed Task Manager API
+  description: API specification for a cloud-native, serverless task management platform featuring distributed microservices and streaming video/audio attachments.
+  version: 1.1.0
+  contact:
+    name: API Support
+    email: support@taskmanager.local
+servers:
+  - url: https://api.taskmanager.local/v1
+    description: Production API Gateway
+  - url: https://staging.api.taskmanager.local/v1
+    description: Staging Environment
+  - url: http://localhost:3000/v1
+    description: Local Development Environment
+
+tags:
+  - name: Authentication
+    description: User registration, login, and password management.
+  - name: Users
+    description: User profile and role management.
+  - name: Tasks
+    description: Task CRUD, history, and status tracking.
+  - name: Assignments
+    description: Task assignments and delegations.
+  - name: Categories
+    description: Task categorization.
+  - name: Collaboration
+    description: Comments and mentions.
+  - name: Notifications
+    description: Asynchronous user notifications.
+  - name: Media
+    description: Streaming media attachments (upload, multipart, stream, metadata).
+  - name: Reports
+    description: Read-only projections of task progress and productivity.
+  - name: Admin
+    description: Administrative operations like role management.
+
+paths:
+  /auth/register:
+    post:
+      tags:
+        - Authentication
+      summary: Register a new user
+      operationId: registerUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserRegistrationRequest'
+      responses:
+        '201':
+          description: User registered successfully
+          headers:
+            $ref: '#/components/headers/RateLimitHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /auth/login:
+    post:
+      tags:
+        - Authentication
+      summary: Authenticate user
+      operationId: loginUser
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Authentication successful
+          headers:
+            $ref: '#/components/headers/RateLimitHeaders'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /auth/password/recovery:
+    post:
+      tags:
+        - Authentication
+      summary: Request password recovery email
+      operationId: requestPasswordRecovery
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email]
+              properties:
+                email:
+                  type: string
+                  format: email
+      responses:
+        '202':
+          description: Recovery email dispatched (if email exists)
+
+  /auth/password/reset:
+    post:
+      tags:
+        - Authentication
+      summary: Reset password using recovery token
+      operationId: resetPassword
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [token, newPassword]
+              properties:
+                token:
+                  type: string
+                newPassword:
+                  type: string
+                  format: password
+                  minLength: 8
+      responses:
+        '200':
+          description: Password reset successful
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /users/me:
+    get:
+      tags:
+        - Users
+      summary: Get current authenticated user profile
+      operationId: getCurrentUser
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Current user profile
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    patch:
+      tags:
+        - Users
+      summary: Update current user profile
+      operationId: updateCurrentUser
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                  maxLength: 150
+                avatarUrl:
+                  type: string
+                  format: uri
+      responses:
+        '200':
+          description: Profile updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /users/me/password:
+    patch:
+      tags:
+        - Users
+      summary: Change password
+      operationId: changePassword
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword]
+              properties:
+                currentPassword:
+                  type: string
+                  format: password
+                newPassword:
+                  type: string
+                  format: password
+                  minLength: 8
+      responses:
+        '200':
+          description: Password changed successfully
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /tasks:
+    get:
+      tags:
+        - Tasks
+      summary: List, filter, and search tasks
+      operationId: listTasks
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/SearchQuery'
+        - $ref: '#/components/parameters/PageLimit'
+        - $ref: '#/components/parameters/PageCursor'
+        - $ref: '#/components/parameters/SortBy'
+        - $ref: '#/components/parameters/SortOrder'
+        - name: status
+          in: query
+          description: Filter by task status
+          schema:
+            $ref: '#/components/schemas/TaskStatus'
+        - name: priority
+          in: query
+          description: Filter by task priority
+          schema:
+            $ref: '#/components/schemas/TaskPriority'
+        - name: categoryId
+          in: query
+          description: Filter by category UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: A cursor-paginated list of tasks
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CursorPaginatedResponse'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Task'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+        - Tasks
+      summary: Create a new task
+      operationId: createTask
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskInput'
+      responses:
+        '201':
+          description: Task created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /tasks/{id}:
+    get:
+      tags:
+        - Tasks
+      summary: Get task details
+      operationId: getTask
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TaskIdParam'
+      responses:
+        '200':
+          description: Task details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags:
+        - Tasks
+      summary: Update an existing task
+      operationId: updateTask
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TaskIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TaskInput'
+      responses:
+        '200':
+          description: Task updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Task'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+    delete:
+      tags:
+        - Tasks
+      summary: Delete a task
+      operationId: deleteTask
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TaskIdParam'
+      responses:
+        '204':
+          description: Task deleted
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tasks/{id}/history:
+    get:
+      tags:
+        - Tasks
+      summary: Get task history
+      operationId: getTaskHistory
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TaskIdParam'
+        - $ref: '#/components/parameters/PageLimit'
+        - $ref: '#/components/parameters/PageCursor'
+      responses:
+        '200':
+          description: Task audit history
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CursorPaginatedResponse'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/TaskHistory'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tasks/{id}/assignments:
+    get:
+      tags:
+        - Assignments
+      summary: List users assigned to a task
+      operationId: getTaskAssignments
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TaskIdParam'
+      responses:
+        '200':
+          description: List of assigned users
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+        - Assignments
+      summary: Assign a user to a task
+      operationId: assignUserToTask
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TaskIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId]
+              properties:
+                userId:
+                  type: string
+                  format: uuid
+      responses:
+        '201':
+          description: User assigned
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /tasks/{id}/assignments/{userId}:
+    delete:
+      tags:
+        - Assignments
+      summary: Remove a user assignment from a task
+      operationId: removeTaskAssignment
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TaskIdParam'
+        - name: userId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Assignment removed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /tasks/{id}/comments:
+    get:
+      tags:
+        - Collaboration
+      summary: Get comments for a task
+      operationId: getTaskComments
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TaskIdParam'
+        - $ref: '#/components/parameters/PageLimit'
+        - $ref: '#/components/parameters/PageCursor'
+      responses:
+        '200':
+          description: Paginated comments
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CursorPaginatedResponse'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Comment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    post:
+      tags:
+        - Collaboration
+      summary: Add a comment to a task
+      operationId: addTaskComment
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/TaskIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CommentInput'
+      responses:
+        '201':
+          description: Comment created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Comment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /notifications:
+    get:
+      tags:
+        - Notifications
+      summary: Get user notifications
+      operationId: getNotifications
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/PageLimit'
+        - $ref: '#/components/parameters/PageCursor'
+        - name: isRead
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: List of notifications
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/CursorPaginatedResponse'
+                  - type: object
+                    properties:
+                      items:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Notification'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /notifications/{id}/read:
+    patch:
+      tags:
+        - Notifications
+      summary: Mark a single notification as read
+      operationId: markNotificationRead
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Notification marked as read
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /notifications/read-all:
+    patch:
+      tags:
+        - Notifications
+      summary: Mark all notifications as read
+      operationId: markAllNotificationsRead
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: All notifications marked as read
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /media/upload-url:
+    post:
+      tags:
+        - Media
+      summary: Generate an S3 pre-signed URL for direct upload
+      operationId: generateUploadUrl
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaUploadRequest'
+      responses:
+        '200':
+          description: Pre-signed upload details generated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaUploadUrlResponse'
+          links:
+            CompleteUpload:
+              operationId: completeMediaUpload
+              parameters:
+                uploadId: '$response.body#/uploadId'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /media/multipart:
+    post:
+      tags:
+        - Media
+      summary: Initiate a multipart upload for large media files
+      operationId: initiateMultipartUpload
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaUploadRequest'
+      responses:
+        '200':
+          description: Multipart upload initiated
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  uploadId:
+                    type: string
+                  storageKey:
+                    type: string
+
+  /media/multipart/{id}/parts:
+    post:
+      tags:
+        - Media
+      summary: Get pre-signed URLs for multipart parts
+      operationId: getMultipartPreSignedUrls
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MediaIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [parts]
+              properties:
+                parts:
+                  type: integer
+                  minimum: 1
+                  maximum: 10000
+      responses:
+        '200':
+          description: Pre-signed URLs for parts
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  partUrls:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        partNumber:
+                          type: integer
+                        uploadUrl:
+                          type: string
+                          format: uri
+
+  /media/multipart/{id}/complete:
+    post:
+      tags:
+        - Media
+      summary: Complete a multipart upload
+      operationId: completeMultipartUpload
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MediaIdParam'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [parts, taskId]
+              properties:
+                taskId:
+                  type: string
+                  format: uuid
+                parts:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      partNumber:
+                        type: integer
+                      eTag:
+                        type: string
+      responses:
+        '201':
+          description: Multipart media saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaAttachment'
+
+  /media/complete:
+    post:
+      tags:
+        - Media
+      summary: Confirm a standard media upload to S3 and save metadata
+      operationId: completeMediaUpload
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaCompleteRequest'
+      responses:
+        '201':
+          description: Media metadata saved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaAttachment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          description: Upload already confirmed
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /media/{id}:
+    get:
+      tags:
+        - Media
+      summary: Retrieve media attachment metadata
+      description: Returns metadata for a media attachment associated with a task. Does not generate a streaming URL.
+      operationId: getMedia
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MediaIdParam'
+      responses:
+        '200':
+          description: Media metadata retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaAttachment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+    put:
+      tags:
+        - Media
+      summary: Replace an existing media attachment
+      description: |
+        Replaces an existing media attachment. The client must first upload the new
+        object to Amazon S3 using either the standard or multipart upload workflow,
+        then invoke this endpoint to associate the new object with the existing media
+        record. The previous object is scheduled for asynchronous deletion.
+      operationId: replaceMedia
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MediaIdParam'
+        - $ref: '#/components/parameters/IdempotencyKey'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MediaReplaceRequest'
+      responses:
+        '200':
+          description: Media attachment replaced successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaAttachment'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          description: Replacement already processed
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+    delete:
+      tags:
+        - Media
+      summary: Delete a media attachment
+      description: |
+        Deletes the media attachment metadata and schedules asynchronous removal
+        of the underlying object from Amazon S3. The associated task remains
+        unchanged.
+      operationId: deleteMedia
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MediaIdParam'
+      responses:
+        '204':
+          description: Media attachment deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /media/{id}/stream:
+    get:
+      tags:
+        - Media
+      summary: Generate a secure CloudFront URL for media streaming
+      operationId: getMediaStreamUrl
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/MediaIdParam'
+      responses:
+        '200':
+          description: Secure streaming URL details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MediaStreamResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          description: Media has been deleted but metadata exists
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+
+  /categories:
+    get:
+      tags:
+        - Categories
+      summary: List all categories
+      operationId: listCategories
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of categories
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    post:
+      tags:
+        - Categories
+      summary: Create a category
+      operationId: createCategory
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryInput'
+      responses:
+        '201':
+          description: Category created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '422':
+          $ref: '#/components/responses/UnprocessableEntity'
+
+  /reports/dashboard:
+    get:
+      tags:
+        - Reports
+      summary: Get high-level dashboard metrics
+      operationId: getDashboardReport
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Dashboard metrics
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportDashboard'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /reports/completed:
+    get:
+      tags:
+        - Reports
+      summary: Get completed tasks report
+      operationId: getCompletedTasksReport
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date
+      responses:
+        '200':
+          description: Completed tasks report data
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /reports/pending:
+    get:
+      tags:
+        - Reports
+      summary: Get pending tasks report
+      operationId: getPendingTasksReport
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: Pending tasks report data
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /roles:
+    get:
+      tags:
+        - Admin
+      summary: List all available roles (Admin Only)
+      operationId: listRoles
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: List of roles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /users/{id}/roles:
+    get:
+      tags:
+        - Admin
+      summary: Get roles for a specific user (Admin Only)
+      operationId: getUserRoles
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: User roles
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Role'
+    put:
+      tags:
+        - Admin
+      summary: Update roles for a specific user (Admin Only)
+      operationId: updateUserRoles
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [roleIds]
+              properties:
+                roleIds:
+                  type: array
+                  items:
+                    type: string
+                    format: uuid
+      responses:
+        '200':
+          description: Roles updated successfully
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT Authorization header using the Bearer scheme.
+
+  headers:
+    RateLimitHeaders:
+      X-RateLimit-Limit:
+        description: Request limit per window.
+        schema:
+          type: integer
+      X-RateLimit-Remaining:
+        description: Remaining requests in the current window.
+        schema:
+          type: integer
+      Retry-After:
+        description: Seconds to wait before making another request.
+        schema:
+          type: integer
+
+  parameters:
+    TaskIdParam:
+      name: id
+      in: path
+      required: true
+      description: UUID of the task
+      schema:
+        type: string
+        format: uuid
+    MediaIdParam:
+      name: id
+      in: path
+      required: true
+      description: UUID of the media attachment
+      schema:
+        type: string
+        format: uuid
+    PageLimit:
+      name: limit
+      in: query
+      description: Maximum number of items to return
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+    PageCursor:
+      name: cursor
+      in: query
+      description: Cursor for pagination to fetch the next set of results
+      schema:
+        type: string
+    SearchQuery:
+      name: q
+      in: query
+      description: Search term across titles, descriptions, and comments
+      schema:
+        type: string
+    SortBy:
+      name: sortBy
+      in: query
+      description: Field to sort by
+      schema:
+        type: string
+        enum: [createdAt, updatedAt, dueDate, priority, status]
+        default: createdAt
+    SortOrder:
+      name: sortOrder
+      in: query
+      description: Sort direction
+      schema:
+        type: string
+        enum: [asc, desc]
+        default: desc
+    IdempotencyKey:
+      name: Idempotency-Key
+      in: header
+      description: Client-generated unique identifier to ensure safe retries
+      schema:
+        type: string
+        maxLength: 100
+
+  responses:
+    BadRequest:
+      description: Invalid request payload format
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    Unauthorized:
+      description: Missing or invalid authentication token
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    Forbidden:
+      description: User lacks sufficient permissions
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    NotFound:
+      description: Resource not found
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    Conflict:
+      description: Resource already exists or state conflict
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+    UnprocessableEntity:
+      description: Validation error on the request content
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+
+  schemas:
+    ProblemDetails:
+      type: object
+      description: RFC 9457 Problem Details for HTTP APIs
+      required: [type, title, status]
+      properties:
+        type:
+          type: string
+          format: uri
+          example: 'https://api.taskmanager.local/errors/validation-error'
+        title:
+          type: string
+          example: 'Validation Error'
+        status:
+          type: integer
+          example: 422
+        detail:
+          type: string
+          example: 'The provided email address is invalid.'
+        instance:
+          type: string
+          format: uri
+          example: '/auth/register'
+        errors:
+          type: array
+          items:
+            type: object
+            properties:
+              field:
+                type: string
+              message:
+                type: string
+
+    CursorPaginatedResponse:
+      type: object
+      required: [limit]
+      properties:
+        limit:
+          type: integer
+          example: 20
+        nextCursor:
+          type: string
+          nullable: true
+          description: Token to fetch the next page. Null if no more pages.
+        total:
+          type: integer
+          description: Optional total count if requested or available
+
+    TaskStatus:
+      type: string
+      enum: [BACKLOG, TODO, IN_PROGRESS, REVIEW, COMPLETED]
+
+    TaskPriority:
+      type: string
+      enum: [LOW, MEDIUM, HIGH, CRITICAL]
+
+    TaskVisibility:
+      type: string
+      enum: [PRIVATE, SHARED]
+
+    UserRegistrationRequest:
+      type: object
+      required: [username, email, password]
+      properties:
+        username:
+          type: string
+          minLength: 3
+          maxLength: 50
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        password:
+          type: string
+          format: password
+          minLength: 8
+        fullName:
+          type: string
+          maxLength: 150
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+          format: password
+
+    AuthResponse:
+      type: object
+      required: [accessToken, user]
+      properties:
+        accessToken:
+          type: string
+        user:
+          $ref: '#/components/schemas/User'
+
+    Role:
+      type: object
+      required: [id, name]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: 'ADMIN'
+        description:
+          type: string
+
+    User:
+      type: object
+      required: [id, username, email, isActive, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        username:
+          type: string
+        email:
+          type: string
+          format: email
+        fullName:
+          type: string
+        avatarUrl:
+          type: string
+          format: uri
+        isActive:
+          type: boolean
+        roles:
+          type: array
+          items:
+            $ref: '#/components/schemas/Role'
+        createdAt:
+          type: string
+          format: date-time
+
+    TaskInput:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          maxLength: 200
+        description:
+          type: string
+        categoryId:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/TaskStatus'
+          default: BACKLOG
+        priority:
+          $ref: '#/components/schemas/TaskPriority'
+          default: MEDIUM
+        visibility:
+          $ref: '#/components/schemas/TaskVisibility'
+          default: PRIVATE
+        dueDate:
+          type: string
+          format: date-time
+        archived:
+          type: boolean
+          default: false
+
+    Task:
+      allOf:
+        - $ref: '#/components/schemas/TaskInput'
+        - type: object
+          required: [id, ownerId, createdAt, updatedAt]
+          properties:
+            id:
+              type: string
+              format: uuid
+            ownerId:
+              type: string
+              format: uuid
+            assignedUsers:
+              type: array
+              items:
+                $ref: '#/components/schemas/User'
+            completedAt:
+              type: string
+              format: date-time
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+
+    TaskHistory:
+      type: object
+      required: [id, taskId, userId, action, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        taskId:
+          type: string
+          format: uuid
+        userId:
+          type: string
+          format: uuid
+        action:
+          type: string
+          example: 'STATUS_CHANGED'
+        fieldName:
+          type: string
+        oldValue:
+          type: string
+        newValue:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    CategoryInput:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+        description:
+          type: string
+          maxLength: 255
+        color:
+          type: string
+          maxLength: 20
+
+    Category:
+      allOf:
+        - $ref: '#/components/schemas/CategoryInput'
+        - type: object
+          required: [id, createdBy, createdAt]
+          properties:
+            id:
+              type: string
+              format: uuid
+            createdBy:
+              type: string
+              format: uuid
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+
+    CommentInput:
+      type: object
+      required: [content]
+      properties:
+        content:
+          type: string
+        parentCommentId:
+          type: string
+          format: uuid
+        mentions:
+          type: array
+          items:
+            type: string
+            format: uuid
+            description: Array of user IDs mentioned in the comment
+
+    Comment:
+      allOf:
+        - $ref: '#/components/schemas/CommentInput'
+        - type: object
+          required: [id, taskId, userId, createdAt]
+          properties:
+            id:
+              type: string
+              format: uuid
+            taskId:
+              type: string
+              format: uuid
+            userId:
+              type: string
+              format: uuid
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+
+    Notification:
+      type: object
+      required: [id, type, title, message, isRead, createdAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        taskId:
+          type: string
+          format: uuid
+        commentId:
+          type: string
+          format: uuid
+        type:
+          type: string
+          enum: [ASSIGNMENT, TASK_UPDATED, MENTION]
+        title:
+          type: string
+        message:
+          type: string
+        isRead:
+          type: boolean
+        createdAt:
+          type: string
+          format: date-time
+        readAt:
+          type: string
+          format: date-time
+
+    MediaUploadRequest:
+      type: object
+      required: [taskId, filename, contentType, fileSize]
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        filename:
+          type: string
+        contentType:
+          type: string
+          example: 'video/mp4'
+        fileSize:
+          type: integer
+          format: int64
+          minimum: 1
+
+    MediaUploadUrlResponse:
+      type: object
+      required: [uploadUrl, uploadId, storageKey, expiresIn, method, bucket, region]
+      properties:
+        uploadUrl:
+          type: string
+          format: uri
+        uploadId:
+          type: string
+          format: uuid
+        storageKey:
+          type: string
+        expiresIn:
+          type: integer
+          description: Expiration time in seconds
+          example: 3600
+        method:
+          type: string
+          example: 'PUT'
+        bucket:
+          type: string
+        region:
+          type: string
+        allowedHeaders:
+          type: array
+          items:
+            type: string
+          example: ['Content-Type', 'Content-Length']
+
+    MediaCompleteRequest:
+      type: object
+      required: [uploadId, taskId, storageKey, checksum, mimeType, fileSize]
+      properties:
+        uploadId:
+          type: string
+          format: uuid
+        taskId:
+          type: string
+          format: uuid
+        storageKey:
+          type: string
+        checksum:
+          type: string
+        mimeType:
+          type: string
+          example: 'video/mp4'
+        fileSize:
+          type: integer
+          format: int64
+        width:
+          type: integer
+        height:
+          type: integer
+        duration:
+          type: integer
+          description: Duration in seconds for video/audio
+           
+    MediaReplaceRequest:
+      type: object
+      required:
+        - storageKey
+        - taskId
+        - mediaType
+        - originalFilename
+        - mimeType
+        - fileSize
+      properties:
+        taskId:
+          type: string
+          format: uuid
+        storageKey:
+          type: string
+          description: S3 object key of the newly uploaded media.
+        mediaType:
+          type: string
+          enum:
+            - VIDEO
+            - AUDIO
+        originalFilename:
+          type: string
+        mimeType:
+          type: string
+        fileSize:
+          type: integer
+          format: int64
+        durationSeconds:
+          type: integer
+          minimum: 0
+        width:
+          type: integer
+          minimum: 1
+        height:
+          type: integer
+          minimum: 1
+        checksum:
+          type: string
+          description: SHA-256 checksum of the uploaded file.
+
+    MediaAttachment:
+      type: object
+      required: [id, taskId, uploadedBy, mediaType, originalFilename, storageKey, mimeType, fileSize, uploadedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        taskId:
+          type: string
+          format: uuid
+        uploadedBy:
+          type: string
+          format: uuid
+        mediaType:
+          type: string
+          enum: [VIDEO, AUDIO]
+        originalFilename:
+          type: string
+        storageKey:
+          type: string
+        mimeType:
+          type: string
+        fileSize:
+          type: integer
+          format: int64
+        durationSeconds:
+          type: integer
+        width:
+          type: integer
+        height:
+          type: integer
+        thumbnailKey:
+          type: string
+        checksum:
+          type: string
+        uploadedAt:
+          type: string
+          format: date-time
+
+    MediaStreamResponse:
+      type: object
+      required: [streamUrl, expiresAt, contentType, supportsRanges]
+      properties:
+        streamUrl:
+          type: string
+          format: uri
+          description: Secure CloudFront URL supporting HTTP Range queries
+        expiresAt:
+          type: string
+          format: date-time
+        contentType:
+          type: string
+          example: 'video/mp4'
+        supportsRanges:
+          type: boolean
+          default: true
+
+    ReportDashboard:
+      type: object
+      properties:
+        totalTasks:
+          type: integer
+        completedTasks:
+          type: integer
+        pendingTasks:
+          type: integer
+        overdueTasks:
+          type: integer

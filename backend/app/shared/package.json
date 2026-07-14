@@ -1,0 +1,28 @@
+{
+  "name": "@backend/shared",
+  "version": "1.0.0",
+  "description": "Shared library for the domain-oriented monorepo: contracts, events, middleware, logging, error handling, validation utilities, shared types, common configuration and OpenAPI documentation.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "private": true,
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "dev": "tsc -w -p tsconfig.json",
+    "lint": "eslint src --ext .ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "fastify": "^5.10.0",
+    "zod": "^3.23.8",
+    "jsonwebtoken": "^9.0.2",
+    "pino": "^9.3.2",
+    "uuid": "^9.0.1"
+  },
+  "devDependencies": {
+    "@types/jsonwebtoken": "^9.0.6",
+    "@types/node": "^20.14.10",
+    "@types/uuid": "^9.0.8",
+    "typescript": "^5.5.3",
+    "vitest": "^2.0.3"
+  }
+}

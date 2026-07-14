@@ -1,0 +1,36 @@
+Etapa,Objetivo,Input,Ferramenta,Comando (se aplicável),Artefato Gerado
+1. Brainstorming & Escopo,"Compreender o desafio, identificar atores, requisitos funcionais e não funcionais, restrições e diferenciais esperados.",Descrição do desafio,LLM,Prompt detalhado de Product Manager (C1),Documento de Requisitos (A1) - requirements.md
+1. Backlog Funcional,"Organizar funcionalidades em épicos, features e tarefas priorizadas.",Documento de Requisitos (A1),LLM + Markdown,Prompt para geração de backlog (C2),Backlog do Projeto (A2) - backlog.md
+1. Arquitetura da Solução,"Definir arquitetura da aplicação, módulos, camadas, comunicação, padrões, estratégia serverless e streaming.",Documento de Requisitos (A1); Backlog do Projeto (A2),LLM + Draw.io + Mermaid,Prompt de Software Architect (C3),Documento de Arquitetura (A3) - architecture.md
+1. Modelagem de Dados,"Projetar entidades, relacionamentos, constraints e índices do banco relacional.",Documento de Requisitos (A1),LLM + dbdiagram.io,Prompt de geração DBML (C4),Modelo de Dados (A4) - schema.dbml e Diagrama ER
+1. Estratégia de Streaming,Definir tecnologia de streaming e justificar sua adoção.,Documento de Arquitetura (A3),LLM,Prompt técnico (C5),Documento de Streaming (A5) - streaming-design.md
+1. Contratos de API,Definir contratos REST utilizando OpenAPI.,Documento de Requisitos (A1); Documento de Arquitetura (A3); Modelo de Dados (A4),LLM,Prompt OpenAPI (C6),Especificação OpenAPI (A6) - swagger.yaml
+1. Planejamento de Infraestrutura,"Definir arquitetura serverless, recursos AWS e variáveis de ambiente.",Documento de Arquitetura (A3),Serverless Framework + LLM,Prompt de infraestrutura (C7),"Infraestrutura Serverless (I1) - infrastructure.md, terraform modules"
+2. Setup do Repositório,Inicializar repositório e estrutura do projeto.,Documento de Arquitetura (A3),Git + GitHub,git init,Estrutura Inicial (I2)
+2. Infraestrutura Local,Provisionar ambiente local para desenvolvimento.,Infraestrutura Serverless (I1),Docker Compose,docker-compose up -d,Infraestrutura Local (I3) - docker-compose.yml
+2. Banco de Dados,"Criar schema, migrations e seeds.",Modelo de Dados (A4),Drizzle ORM,npx drizzle-kit generate,Banco Configurado (B1)
+2. Qualidade de Código,"Configurar lint, formatter, hooks e padronização.",Estrutura Inicial (I2),ESLint + Prettier + Husky,npm install...,Configuração de Qualidade (I4)
+2. CI/CD,"Automatizar lint, testes e build.",Estrutura Inicial (I2); Configuração de Qualidade (I4),GitHub Actions,npm run lint && npm run test && npm run build,Pipeline CI (I5)
+3. Implementação Backend - Base,Criar estrutura modular do backend.,Especificação OpenAPI (A6); Documento de Arquitetura (A3); Banco Configurado (B1),Fastify + Drizzle + Zod,Implementação,Backend Base (B2)
+3. Autenticação e Autorização,"Implementar login, cadastro, JWT e autorização.",Backend Base (B2); Especificação OpenAPI (A6),Fastify + JWT,npm install @fastify/jwt,Módulo de Autenticação (B3)
+3. CRUD de Usuários,Implementar CRUD de usuários.,Backend Base (B2); Especificação OpenAPI (A6),Fastify + Drizzle,Implementação,CRUD Usuários (B4)
+3. CRUD de Tarefas,Implementar CRUD de tarefas e categorias.,Backend Base (B2); Especificação OpenAPI (A6),Fastify + Drizzle,Implementação,CRUD Tarefas (B5)
+3. Colaboração,Implementar compartilhamento de tarefas.,CRUD Usuários (B4); CRUD Tarefas (B5),Fastify + Drizzle,Implementação,Colaboração (B6)
+3. Relatórios,Implementar estatísticas e indicadores.,CRUD Tarefas (B5),Fastify + SQL,Implementação,Relatórios (B7)
+3. Streaming,Implementar comunicação em tempo real.,Documento de Streaming (A5); Backend Base (B2),Fastify + SSE,Implementação,Streaming (B8)
+3. Observabilidade,Instrumentar OpenTelemetry e Jaeger.,Backend Base (B2),OpenTelemetry,npm install @opentelemetry/sdk-node,Observabilidade (B9)
+3. Segurança,"Adicionar Helmet, CORS, validações e Rate Limit.",Backend Base (B2); Módulo de Autenticação (B3),Fastify Plugins,Implementação,Camada de Segurança (B10)
+3. Testes Unitários,Cobrir regras de negócio.,Backend Base (B2); CRUD Usuários (B4); CRUD Tarefas (B5),Jest,npm run test,Testes Unitários (T1)
+3. Testes de Integração,Validar integração entre API e banco.,Backend Base (B2); Banco Configurado (B1),Jest + Supertest,npm run test:integration,Testes de Integração (T2)
+4. Setup Frontend,Inicializar projeto Vue.,Especificação OpenAPI (A6),Vue + Vite,npm create vue@latest,Frontend Base (F1)
+4. Geração do Client HTTP,Gerar cliente tipado.,Especificação OpenAPI (A6),Orval,npx orval,Cliente HTTP (F2)
+4. Arquitetura Frontend,"Configurar Router, Pinia e estrutura.",Frontend Base (F1),Vue Router + Pinia,npm install...,Arquitetura Frontend (F3)
+4. Desenvolvimento da UI,Construir componentes reutilizáveis.,Documento de Requisitos (A1); Arquitetura Frontend (F3),Vue + Tailwind + ShadCN-Vue,Implementação,Interface (F4)
+4. Integração Frontend-Backend,Consumir API tipada.,Cliente HTTP (F2); Backend Base (B2); Interface (F4),Vue + TanStack Query,Implementação,Frontend Integrado (F5)
+4. Testes Frontend,Validar componentes.,Frontend Integrado (F5),Vitest,npm run test,Testes Frontend (T3)
+5. Deploy Banco,Provisionar PostgreSQL serverless.,Banco Configurado (B1),Neon ou Supabase,Interface Web,Banco em Produção (D1)
+5. Deploy Backend,Publicar API na AWS Lambda.,Backend Base (B2); Infraestrutura Serverless (I1),Serverless Framework,serverless deploy,Backend Publicado (D2)
+5. Deploy Frontend,Publicar aplicação Vue.,Frontend Integrado (F5),Vercel ou Netlify,npm run build,Frontend Publicado (D3)
+5. Validação Pós-Deploy,Executar smoke tests e validar observabilidade.,Backend Publicado (D2); Frontend Publicado (D3),Postman + Jaeger,Testes manuais,Validação Final (D4)
+5. Documentação Técnica,Documentar arquitetura e decisões.,Documento de Arquitetura (A3); Infraestrutura Serverless (I1); Backend Publicado (D2),LLM + Mermaid,Prompt (C8),Documentação Técnica (DOC1) - ARCHITECTURE.md
+5. README Final,"Consolidar instruções de instalação, execução e uso.",Todos os artefatos anteriores,LLM,Prompt (C9),README Final (DOC2) - README.md

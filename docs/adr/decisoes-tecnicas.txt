@@ -1,0 +1,15 @@
+1. Bônus do Streaming:
+
+Permitir que os usuários anexem "Video Memos" ou "Audio Memos" (mensagens de voz/vídeo curtas) às tarefas. No backend (Node.js), não carregar o arquivo inteiro na memória (o que mataria a Lambda). Usar Node.js Readable Streams para ler o arquivo do banco ou de um bucket (S3) e transmiti-lo em pedaços (chunks) diretamente para a tag <video> ou <audio> no Vue.js.
+
+2. Framework Backend: Fastify vs Express
+
+Em ambientes Serverless (AWS Lambda), o tempo que o container leva para ligar (Cold Start) custa dinheiro e prejudica a experiência. O Fastify é significativamente mais rápido e leve que o Express. Usar bibliotecas como @fastify/aws-lambda ou o AWS Lambda Web Adapter para fazer a ponte.
+
+3. ORM e Banco de Dados Relacional
+
+O Drizzle ORM é incrivelmente leve, roda na borda (edge) e não tem os problemas de cold start do Prisma. É a melhor escolha para Serverless.
+
+4. Configuração de infra com Terraform
+
+5. Containerização com Docker

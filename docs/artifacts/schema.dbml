@@ -1,0 +1,215 @@
+Table roles {
+  id uuid [pk]
+  name varchar(50) [not null, unique]
+  description varchar(255)
+  created_at timestamp [not null, default: `now()`]
+}
+
+Table users {
+  id uuid [pk]
+  username varchar(50) [not null, unique]
+  email varchar(255) [not null, unique]
+  password_hash varchar(255) [not null]
+  full_name varchar(150)
+  avatar_url varchar(500)
+  is_active boolean [not null, default: true]
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+
+  Indexes {
+    email [unique]
+    username [unique]
+    is_active
+  }
+}
+
+Table user_roles {
+  user_id uuid [not null]
+  role_id uuid [not null]
+  assigned_at timestamp [not null, default: `now()`]
+
+  Indexes {
+    (user_id, role_id) [pk]
+    role_id
+  }
+}
+
+Table categories {
+  id uuid [pk]
+  name varchar(100) [not null]
+  description varchar(255)
+  color varchar(20)
+  created_by uuid [not null]
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+
+  Indexes {
+    created_by
+    (created_by, name) [unique]
+  }
+}
+
+Table tasks {
+  id uuid [pk]
+  owner_id uuid [not null]
+  category_id uuid
+  title varchar(200) [not null]
+  description text
+  status varchar(20) [not null, default: 'BACKLOG', note: 'BACKLOG, TODO, IN_PROGRESS, REVIEW, COMPLETED']
+  priority varchar(20) [not null, default: 'MEDIUM', note: 'LOW, MEDIUM, HIGH, CRITICAL']
+  visibility varchar(20) [not null, default: 'PRIVATE', note: 'PRIVATE, SHARED']
+  due_date timestamp
+  archived boolean [not null, default: false]
+  completed_at timestamp
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+
+  Indexes {
+    owner_id
+    category_id
+    status
+    priority
+    due_date
+    archived
+    completed_at
+    (owner_id, status)
+    (owner_id, due_date)
+    (owner_id, priority)
+    (category_id, status)
+    (owner_id, archived)
+  }
+}
+
+Table task_assignments {
+  task_id uuid [not null]
+  user_id uuid [not null]
+  assigned_by uuid [not null]
+  assigned_at timestamp [not null, default: `now()`]
+
+  Indexes {
+    (task_id, user_id) [pk]
+    user_id
+    assigned_by
+  }
+}
+
+Table comments {
+  id uuid [pk]
+  task_id uuid [not null]
+  user_id uuid [not null]
+  parent_comment_id uuid
+  content text [not null]
+  created_at timestamp [not null, default: `now()`]
+  updated_at timestamp [not null, default: `now()`]
+  deleted_at timestamp
+
+  Indexes {
+    task_id
+    user_id
+    parent_comment_id
+    (task_id, created_at)
+  }
+}
+
+Table comment_mentions {
+  comment_id uuid [not null]
+  mentioned_user_id uuid [not null]
+
+  Indexes {
+    (comment_id, mentioned_user_id) [pk]
+    mentioned_user_id
+  }
+}
+
+Table media_attachments {
+  id uuid [pk]
+  task_id uuid [not null]
+  uploaded_by uuid [not null]
+  media_type varchar(20) [not null, note: 'VIDEO, AUDIO']
+  original_filename varchar(255) [not null]
+  storage_key varchar(500) [not null, unique]
+  mime_type varchar(100) [not null]
+  file_size bigint [not null]
+  duration_seconds int
+  width int
+  height int
+  thumbnail_key varchar(500)
+  checksum varchar(128)
+  uploaded_at timestamp [not null, default: `now()`]
+  deleted_at timestamp
+
+  Indexes {
+    storage_key [unique]
+    task_id
+    uploaded_by
+    media_type
+    (task_id, media_type)
+  }
+}
+
+Table notifications {
+  id uuid [pk]
+  user_id uuid [not null]
+  task_id uuid
+  comment_id uuid
+  type varchar(30) [not null, note: 'ASSIGNMENT, TASK_UPDATED, MENTION']
+  title varchar(150) [not null]
+  message text [not null]
+  is_read boolean [not null, default: false]
+  created_at timestamp [not null, default: `now()`]
+  read_at timestamp
+
+  Indexes {
+    user_id
+    is_read
+    type
+    (user_id, is_read)
+    (user_id, created_at)
+  }
+}
+
+Table task_history {
+  id uuid [pk]
+  task_id uuid [not null]
+  user_id uuid [not null]
+  action varchar(50) [not null]
+  field_name varchar(100)
+  old_value text
+  new_value text
+  created_at timestamp [not null, default: `now()`]
+
+  Indexes {
+    task_id
+    user_id
+    (task_id, created_at)
+  }
+}
+
+Ref: user_roles.user_id > users.id
+Ref: user_roles.role_id > roles.id
+
+Ref: categories.created_by > users.id
+
+Ref: tasks.owner_id > users.id
+Ref: tasks.category_id > categories.id
+
+Ref: task_assignments.task_id > tasks.id
+Ref: task_assignments.user_id > users.id
+Ref: task_assignments.assigned_by > users.id
+
+Ref: comments.task_id > tasks.id
+Ref: comments.user_id > users.id
+Ref: comments.parent_comment_id > comments.id
+
+Ref: comment_mentions.comment_id > comments.id
+Ref: comment_mentions.mentioned_user_id > users.id
+
+Ref: media_attachments.task_id > tasks.id
+Ref: media_attachments.uploaded_by > users.id
+
+Ref: notifications.user_id > users.id
+Ref: notifications.task_id > tasks.id
+Ref: notifications.comment_id > comments.id
+
+Ref: task_history.task_id > tasks.id
+Ref: task_history.user_id > users.id

@@ -1,0 +1,16 @@
+export enum EventType {
+  USER_REGISTERED = 'UserRegistered',
+  USER_UPDATED = 'UserUpdated',
+  TASK_CREATED = 'TaskCreated',
+  TASK_UPDATED = 'TaskUpdated',
+  TASK_DELETED = 'TaskDeleted',
+  TASK_COMPLETED = 'TaskCompleted',
+  CATEGORY_CREATED = 'CategoryCreated',
+  CATEGORY_DELETED = 'CategoryDeleted',
+  TASK_ASSIGNED = 'TaskAssigned',
+  COMMENT_CREATED = 'CommentCreated',
+  MENTION_CREATED = 'MentionCreated',
+  MEDIA_UPLOADED = 'MediaUploaded',
+  MEDIA_DELETED = 'MediaDeleted',
+  THUMBNAIL_GENERATED = 'ThumbnailGenerated',
+}

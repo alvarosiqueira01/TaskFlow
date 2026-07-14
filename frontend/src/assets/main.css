@@ -1,0 +1,28 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  body {
+    @apply bg-surface-subtle text-neutral-800 font-sans text-body;
+    margin: 0;
+  }
+
+  :focus-visible {
+    @apply outline outline-2 outline-offset-2 outline-primary;
+  }
+}
+
+@layer components {
+  /*
+   * Component-level classes shared across features go here (e.g. a
+   * `.card` base used by TaskCard/CategoryCard) if/when duplication
+   * across shared/components starts to warrant it. Intentionally left
+   * minimal for now to avoid pre-empting shared/components' own styles.
+   */
+}
