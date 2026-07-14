@@ -3,7 +3,7 @@
 A cloud-native, serverless collaborative task management platform built with a distributed microservice architecture for AWS Lambda. TaskFlow enables teams to organize work, assign and track tasks, collaborate through comments and notifications, and attach streaming video and audio directly to tasks without requiring file downloads. Designed around event-driven communication, independently scalable services, and Infrastructure as Code, the platform intends to apply good cloud-native engineering practices and deliver a responsive, cost-efficient, and highly scalable user experience.
 
 ## Project Structure
-- `/frontend`: Vue.js Single Page Application.
+- `/frontend`: Vue.js feature-based application with modular design and Composition API.
 - `/backend`: Node.js 22.x Lambda microservices and shared libraries.
 - `/terraform`: AWS Infrastructure as Code.
 - `/docs`: Architecture specs, PRD, DBML, OpenAPI contracts, screens design and development guidelines.
