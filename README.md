@@ -26,7 +26,7 @@ Start the local PostgreSQL instance and LocalStack (mocking S3, SES, SNS, and Ev
 ```bash
 cd backend
 docker-compose up -d
-``
+``´
 
 ### 4. Install Dependencies
 
