@@ -1,12 +1,12 @@
 # TaskFlow - Distributed Collaborative Task Manager
 
-A cloud-native, serverless task management platform featuring distributed microservices and streaming video/audio attachments.
+A cloud-native, serverless collaborative task management platform built with a distributed microservice architecture for AWS Lambda. TaskFlow enables teams to organize work, assign and track tasks, collaborate through comments and notifications, and attach streaming video and audio directly to tasks without requiring file downloads. Designed around event-driven communication, independently scalable services, and Infrastructure as Code, the platform intends to apply good cloud-native engineering practices and deliver a responsive, cost-efficient, and highly scalable user experience.
 
 ## Project Structure
-- `/frontend`: Vue.js Single Page Application.
+- `/frontend`: Vue.js feature-based application with modular design and Composition API.
 - `/backend`: Node.js 22.x Lambda microservices and shared libraries.
 - `/terraform`: AWS Infrastructure as Code.
-- `/docs`: Architecture specs, PRD, DBML, and OpenAPI contracts.
+- `/docs`: Architecture specs, PRD, DBML, OpenAPI contracts, screens design and development guidelines.
 
 ## Local Development Setup
 
@@ -18,7 +18,7 @@ To run this distributed system locally, we use Docker Compose to mock AWS servic
 * **psql** (or a visual database client like PgAdmin for manual inspection)
 
 ### 2. Environment Variables
-Before starting, you must create a `.env` file inside **each** microservice directory (`backend/app/services/<service-name>`). Ensure they are configured to point to your local PostgreSQL containers and the LocalStack endpoint (`http://localhost:4566`). Reference the `env.ts` file in each service for the specific required variables.
+Before starting, you must create a `.env` file inside **each** microservice directory (`backend/app/services/<service-name>`). Ensure they are configured to point to your local PostgreSQL containers and the LocalStack endpoint (`http://localhost:4566`). In each microsservice root folder there is a .env.example file. Reference the `env.ts` file in each service for the specific required variables.
 
 ### 3. Spin Up Local Infrastructure
 Start the local PostgreSQL instance and LocalStack (mocking S3, SES, SNS, and EventBridge):
@@ -26,7 +26,7 @@ Start the local PostgreSQL instance and LocalStack (mocking S3, SES, SNS, and Ev
 ```bash
 cd backend
 docker-compose up -d
-``
+```
 
 ### 4. Install Dependencies
 
@@ -71,6 +71,10 @@ npm install
 npm run dev
 
 ```
+
+Remember creating .env file and placing VITE_API_BASE_URL=http://localhost:5173/v1
+
+For authentication, the password is 'password123'. Seeded admin user is admin@taskmanager.local
 
 The application will now be fully functional and available at `http://localhost:5173`.
 
