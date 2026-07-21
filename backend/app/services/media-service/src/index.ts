@@ -23,6 +23,7 @@ function buildApp(): { app: FastifyInstance; dispose: () => Promise<void> } {
   app.register(mediaRoutes, {
     mediaController: dependencies.mediaController,
     jwtVerifier: dependencies.jwtVerifier,
+    prefix:'v1'
   });
 
   app.get('/health', async () => ({ status: 'ok', service: 'media-service' }));

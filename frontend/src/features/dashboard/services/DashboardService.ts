@@ -70,7 +70,7 @@ export class DashboardService {
    */
   async getDashboardMetrics(): Promise<DashboardMetrics> {
     const { data } = await httpClient.get<ReportDashboardDto>('/reports/dashboard');
-
+    
     return {
       totalTasks: data.totalTasks ?? 0,
       completedTasks: data.completedTasks ?? 0,

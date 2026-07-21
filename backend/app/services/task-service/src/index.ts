@@ -24,7 +24,7 @@ function buildApp(): { app: FastifyInstance; dispose: () => Promise<void> } {
   app.register(taskRoutes, {
     taskController: dependencies.taskController,
     jwtVerifier: dependencies.jwtVerifier,
-  
+    prefix:'v1'
   });
 
   app.get('/health', async () => ({ status: 'ok', service: 'task-service' }));

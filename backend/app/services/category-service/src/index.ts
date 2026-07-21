@@ -24,7 +24,7 @@ const db = createDrizzleClient(env.databaseUrl);
 
 const categoryRepository = new DrizzleCategoryRepository(db);
 const eventPublisher = new EventBridgeEventPublisher(env.eventBusName, env.awsRegion);
-const jwtVerifier = new JwtVerifier({ publicKey: env.jwtPublicKey, issuer: env.jwtIssuer });
+const jwtVerifier = new JwtVerifier({ secret: env.jwtSecret, issuer: env.jwtIssuer });
 
 const createCategoryUseCase = new CreateCategoryUseCase(categoryRepository, eventPublisher);
 const listCategoriesUseCase = new ListCategoriesUseCase(categoryRepository);
@@ -37,7 +37,7 @@ const app = Fastify({ logger: true });
 
 app.setErrorHandler(errorHandler);
 
-app.register(async (instance) => {await registerRoutes(instance, { categoryController }, jwtVerifier);},)
+app.register(async (instance) => {await registerRoutes(instance, { categoryController }, jwtVerifier);},{prefix:'v1'})
 
 app.get('/health', async () => ({ status: 'ok', service: 'category-service' }));
 

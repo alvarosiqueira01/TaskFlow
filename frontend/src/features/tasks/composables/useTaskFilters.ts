@@ -1,12 +1,12 @@
 import { ref, watch } from 'vue';
-import { useDebounce } from '@/shared/composables/useDebounce';
+import { useDebouncedRef } from '@/shared/composables/useDebounce';
 import { useTaskStore } from '../store/taskStore';
 import type { TaskPriority, TaskSortField, SortOrder, TaskStatus } from '../types/task.types';
 
 export function useTaskFilters() {
   const taskStore = useTaskStore();
   const searchInput = ref(taskStore.filters.q);
-  const debouncedSearch = useDebounce(searchInput, 400);
+  const debouncedSearch = useDebouncedRef(searchInput, 400);
 
   watch(debouncedSearch, (value) => {
     taskStore.setFilters({ q: value });

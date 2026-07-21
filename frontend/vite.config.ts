@@ -1,35 +1,34 @@
 import { fileURLToPath, URL } from 'node:url'
-import { defineConfig } from 'vite'
+import { defineConfig } from 'vitest/config'
 import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
   plugins: [vue()],
   server: {
     proxy: {
-      '^/v1/tasks/.*': {
+      '^/v1/tasks/': {
         target: 'http://localhost:3002',
         changeOrigin: true,
       },
-      '^/v1/reports/.*': {
+      '^/v1/reports/': {
         target: 'http://localhost:3008',
         changeOrigin: true,
       },
-      '^/v1/notifications/.*': {
+      '^/v1/notifications/': {
         target: 'http://localhost:3007',
         changeOrigin: true,
       },
-      '^/v1/media/.*': {
+      '^/v1/media/': {
         target: 'http://localhost:3006',
         changeOrigin: true,
       },
-      '^/v1/categories/.*': {
+      '^/v1/categories/': {
         target: 'http://localhost:3005',
         changeOrigin: true,
       },
       
-      // 2. Auth Service paths LAST
       '^/v1/(auth|users|roles)': {
-        target: 'http://localhost:3000',
+        target: 'http://localhost:3001',
         changeOrigin: true,
       },
     }

@@ -37,8 +37,8 @@ export const handler = awsLambdaFastify(fastify);
 // Local development entry point.
 if (require.main === module) {
   fastify
-    .listen({ port: 3000, host: '0.0.0.0' })
-    .then(() => container.logger.info(`${env.SERVICE_NAME} listening on port 3000`))
+    .listen({ port: 3001, host: '0.0.0.0' })
+    .then(() => container.logger.info(`${env.SERVICE_NAME} listening on port 3001`))
     .catch((error) => {
       container.logger.error({ err: error }, 'failed to start server');
       process.exit(1);

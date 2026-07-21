@@ -23,7 +23,7 @@ const env = loadEnvConfig();
 const db = createDrizzleClient(env.databaseUrl);
 
 const taskProjectionRepository = new DrizzleTaskProjectionRepository(db);
-const jwtVerifier = new JwtVerifier({ publicKey: env.jwtPublicKey, issuer: env.jwtIssuer });
+const jwtVerifier = new JwtVerifier({ secret: env.jwtSecret, issuer: env.jwtIssuer });
 
 const getDashboardReportUseCase = new GetDashboardReportUseCase(taskProjectionRepository);
 const getCompletedTasksReportUseCase = new GetCompletedTasksReportUseCase(taskProjectionRepository);
@@ -41,7 +41,7 @@ const app = Fastify({ logger: true });
 
 app.setErrorHandler(errorHandler);
 
-app.register(async (instance) => {await registerRoutes(instance, { reportController }, jwtVerifier );},)
+app.register(async (instance) => {await registerRoutes(instance, { reportController }, jwtVerifier );},{ prefix:'v1' })
 
 
 app.get('/health', async () => ({ status: 'ok', service: 'reporting-service' }));

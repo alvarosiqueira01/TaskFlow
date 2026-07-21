@@ -1,4 +1,4 @@
-import { createVerify } from 'node:crypto';
+import { createHmac, timingSafeEqual } from 'node:crypto';
 
 export interface AuthenticatedUserClaims {
   id: string;
@@ -7,7 +7,7 @@ export interface AuthenticatedUserClaims {
 }
 
 interface JwtVerifierConfig {
-  publicKey: string;
+  secret: string;
   issuer: string;
 }
 
@@ -33,12 +33,18 @@ export class JwtVerifier {
     const [headerPart, payloadPart, signaturePart] = parts;
     const signedContent = `${headerPart}.${payloadPart}`;
 
-    const verifier = createVerify('RSA-SHA256');
-    verifier.update(signedContent);
-    verifier.end();
+    // Create the expected signature using HMAC SHA256 and your secret
+    const expectedSignatureBuffer = createHmac('sha256', this.config.secret)
+      .update(signedContent)
+      .digest();
 
-    const isValid = verifier.verify(this.config.publicKey, base64UrlDecode(signaturePart));
-    if (!isValid) {
+    const providedSignatureBuffer = base64UrlDecode(signaturePart);
+
+    // Prevent timing attacks by using timingSafeEqual, but ensure lengths match first
+    if (
+      expectedSignatureBuffer.length !== providedSignatureBuffer.length ||
+      !timingSafeEqual(expectedSignatureBuffer, providedSignatureBuffer)
+    ) {
       throw new JwtVerificationError('Invalid token signature');
     }
 

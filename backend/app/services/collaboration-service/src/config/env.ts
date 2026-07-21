@@ -7,7 +7,7 @@ export interface EnvConfig {
   databaseUrl: string;
   eventBusName: string;
   awsRegion: string;
-  jwtPublicKey: string;
+  jwtSecret: string;
   jwtIssuer: string;
   userServiceBaseUrl: string;
   userServiceInternalToken: string;
@@ -30,7 +30,7 @@ export function loadEnvConfig(): EnvConfig {
     databaseUrl: requireEnv('DATABASE_URL'),
     eventBusName: requireEnv('EVENT_BUS_NAME'),
     awsRegion: process.env.AWS_REGION ?? 'us-east-1',
-    jwtPublicKey: requireEnv('JWT_PUBLIC_KEY'),
+    jwtSecret: requireEnv('JWT_SECRET'),
     jwtIssuer: requireEnv('JWT_ISSUER'),
     userServiceBaseUrl: requireEnv('USER_SERVICE_BASE_URL'),
     userServiceInternalToken: requireEnv('USER_SERVICE_INTERNAL_TOKEN'),

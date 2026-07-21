@@ -43,7 +43,7 @@ const userDirectoryRepository = new UserDirectoryHttpClient({
   internalToken: env.userServiceInternalToken,
 });
 const eventPublisher = new EventBridgeEventPublisher(env.eventBusName, env.awsRegion);
-const jwtVerifier = new JwtVerifier({ publicKey: env.jwtPublicKey, issuer: env.jwtIssuer });
+const jwtVerifier = new JwtVerifier({ secret: env.jwtSecret, issuer: env.jwtIssuer });
 
 const assignUserToTaskUseCase = new AssignUserToTaskUseCase(
   assignmentRepository,
@@ -87,7 +87,7 @@ const app = Fastify({ logger: true });
 app.setErrorHandler(errorHandler);
 
 
-app.register(async (instance) => {await registerRoutes(instance, { assignmentController, commentController, notificationController }, jwtVerifier);})
+app.register(async (instance) => {await registerRoutes(instance, { assignmentController, commentController, notificationController }, jwtVerifier);},{prefix:'v1'})
 
 
 app.get('/health', async () => ({ status: 'ok', service: 'collaboration-service' }));

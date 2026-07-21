@@ -22,7 +22,7 @@ const app = Fastify({ logger: true });
 
 app.setErrorHandler(errorHandler);
 
-app.register(async (instance) => {await registerRoutes(instance, { healthController });})
+app.register(async (instance) => {await registerRoutes(instance, { healthController });},{ prefix:'v1' })
 
 // ---- Lambda adapter --------------------------------------------------------
 

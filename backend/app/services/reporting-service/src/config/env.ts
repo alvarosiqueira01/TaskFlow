@@ -5,7 +5,7 @@ export interface EnvConfig {
   port: number;
   databaseUrl: string;
   awsRegion: string;
-  jwtPublicKey: string;
+  jwtSecret: string;
   jwtIssuer: string;
 }
 
@@ -20,10 +20,10 @@ function requireEnv(name: string): string {
 export function loadEnvConfig(): EnvConfig {
   return {
     nodeEnv: process.env.NODE_ENV ?? 'development',
-    port: Number(process.env.PORT ?? 3006),
+    port: Number(process.env.PORT ?? 3008),
     databaseUrl: requireEnv('DATABASE_URL'),
     awsRegion: process.env.AWS_REGION ?? 'us-east-1',
-    jwtPublicKey: requireEnv('JWT_PUBLIC_KEY'),
+    jwtSecret: requireEnv('JWT_SECRET'),
     jwtIssuer: requireEnv('JWT_ISSUER'),
   };
 }
